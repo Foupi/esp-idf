@@ -594,6 +594,10 @@ esp_http_client_handle_t esp_http_client_init(const esp_http_client_config_t *co
         esp_transport_ssl_set_cert_data(ssl, config->cert_pem, strlen(config->cert_pem));
     }
 
+    if (config->use_secure_element) {
+        esp_transport_ssl_use_secure_element(ssl);
+    }
+
     if (config->client_cert_pem) {
         esp_transport_ssl_set_client_cert_data(ssl, config->client_cert_pem, strlen(config->client_cert_pem));
     }

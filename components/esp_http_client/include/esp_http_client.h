@@ -135,6 +135,7 @@ typedef struct {
     int                         keep_alive_idle;     /*!< Keep-alive idle time. Default is 5 (second) */
     int                         keep_alive_interval; /*!< Keep-alive interval time. Default is 5 (second) */
     int                         keep_alive_count;    /*!< Keep-alive packet retry send count. Default is 3 counts */
+    bool                        use_secure_element;  /*!< Enable this option to use secure element or not */
 } esp_http_client_config_t;
 
 /**
