@@ -29,6 +29,7 @@
 #include "esp32c3/rom/ets_sys.h"
 #include "esp32c3/rom/rtc.h"
 #include "regi2c_ctrl.h"
+#include "esp_efuse.h"
 
 /**
  * Configure whether certain peripherals are powered down in deep sleep
@@ -95,15 +96,18 @@ void rtc_sleep_init(rtc_sleep_config_t cfg)
     if (cfg.deep_slp) {
         REGI2C_WRITE_MASK(I2C_ULP, I2C_ULP_IR_FORCE_XPD_CK, 0);
         CLEAR_PERI_REG_MASK(RTC_CNTL_REG, RTC_CNTL_REGULATOR_FORCE_PU);
-        /* It's only a temporary configuration to set dbg 0 to make deepsleep run successfully when in high temperature.
-           we will restore it to RTC_CNTL_DBG_ATTEN_DEEPSLEEP_DEFAULT when ECO chip come back.
-           TODO ESP32-C3 IDF-2568
-         */
-        REG_SET_FIELD(RTC_CNTL_BIAS_CONF_REG, RTC_CNTL_DBG_ATTEN_DEEP_SLP, 0);
+        unsigned atten_deep_sleep = RTC_CNTL_DBG_ATTEN_DEEPSLEEP_DEFAULT;
+    #if CONFIG_ESP32C3_REV_MIN < 3
+        if (esp_efuse_get_chip_ver() < 3) {
+            atten_deep_sleep = 0; /* workaround for deep sleep issue in high temp on ECO2 and below */
+        }
+    #endif
+        REG_SET_FIELD(RTC_CNTL_BIAS_CONF_REG, RTC_CNTL_DBG_ATTEN_DEEP_SLP, atten_deep_sleep);
         SET_PERI_REG_MASK(RTC_CNTL_DIG_PWC_REG, RTC_CNTL_DG_WRAP_PD_EN);
         CLEAR_PERI_REG_MASK(RTC_CNTL_ANA_CONF_REG,
                             RTC_CNTL_CKGEN_I2C_PU | RTC_CNTL_PLL_I2C_PU |
                             RTC_CNTL_RFRX_PBUS_PU | RTC_CNTL_TXRF_I2C_PU);
+        CLEAR_PERI_REG_MASK(RTC_CNTL_OPTIONS0_REG, RTC_CNTL_BB_I2C_FORCE_PU);
     } else {
         SET_PERI_REG_MASK(RTC_CNTL_BIAS_CONF_REG, RTC_CNTL_DG_VDD_DRV_B_SLP_EN);
         REG_SET_FIELD(RTC_CNTL_BIAS_CONF_REG, RTC_CNTL_DG_VDD_DRV_B_SLP, RTC_CNTL_DG_VDD_DRV_B_SLP_DEFAULT);
@@ -117,9 +121,7 @@ void rtc_sleep_init(rtc_sleep_config_t cfg)
     REG_SET_FIELD(RTC_CNTL_SDIO_CONF_REG, RTC_CNTL_SDIO_PD_EN, cfg.vddsdio_pd_en);
 
     REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_EXT_RTC_DREG_SLEEP, cfg.rtc_dbias_slp);
-    REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_EXT_RTC_DREG, cfg.rtc_dbias_wak);
     REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_EXT_DIG_DREG_SLEEP, cfg.dig_dbias_slp);
-    REGI2C_WRITE_MASK(I2C_DIG_REG, I2C_DIG_REG_EXT_DIG_DREG, cfg.dig_dbias_wak);
 
     REG_SET_FIELD(RTC_CNTL_SLP_REJECT_CONF_REG, RTC_CNTL_DEEP_SLP_REJECT_EN, cfg.deep_slp_reject);
     REG_SET_FIELD(RTC_CNTL_SLP_REJECT_CONF_REG, RTC_CNTL_LIGHT_SLP_REJECT_EN, cfg.light_slp_reject);

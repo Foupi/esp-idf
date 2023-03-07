@@ -58,6 +58,17 @@ tL2C_LCB *l2cu_allocate_lcb (BD_ADDR p_bd_addr, BOOLEAN is_bonding, tBT_TRANSPOR
     if(p_lcb != NULL) {
         list_ret = true;
     }
+
+#if (CLASSIC_BT_INCLUDED == TRUE)
+    /* Check if peer device's and our BD_ADDR is same or not. It
+       should be different to avoid 'Impersonation in the Pin Pairing
+       Protocol' (CVE-2020-26555) vulnerability. */
+    if (memcmp((uint8_t *)p_bd_addr, (uint8_t *)&controller_get_interface()->get_address()->address, sizeof (BD_ADDR)) == 0) {
+        L2CAP_TRACE_ERROR ("%s connection rejected due to same BD ADDR", __func__);
+        return (NULL);
+    }
+#endif
+
     if(p_lcb == NULL && list_length(l2cb.p_lcb_pool) < MAX_L2CAP_LINKS) {
         p_lcb = (tL2C_LCB *)osi_malloc(sizeof(tL2C_LCB));
 	    if (p_lcb) {
@@ -147,6 +158,10 @@ void l2cu_release_lcb (tL2C_LCB *p_lcb)
 
     p_lcb->in_use     = FALSE;
     p_lcb->is_bonding = FALSE;
+#if (BLE_INCLUDED == TRUE)
+    p_lcb->retry_create_con = 0;
+    p_lcb->start_time_s = 0;
+#endif // #if (BLE_INCLUDED == TRUE)
 
     /* Stop and release timers */
     btu_free_timer (&p_lcb->timer_entry);
@@ -322,6 +337,26 @@ tL2C_LCB  *l2cu_find_free_lcb (void)
     }
     /* If here, no match found */
     return (NULL);
+}
+
+uint8_t l2cu_plcb_active_count(void)
+{
+    list_node_t *p_node = NULL;
+    tL2C_LCB    *p_lcb  = NULL;
+    uint8_t active_count = 0;
+    for (p_node = list_begin(l2cb.p_lcb_pool); p_node; p_node = list_next(p_node)) {
+        p_lcb = list_node(p_node);
+        if (p_lcb && p_lcb->in_use) {
+            active_count ++;
+        }
+    }
+    if (active_count >= MAX_L2CAP_CHANNELS) {
+        L2CAP_TRACE_ERROR("error active count");
+        active_count = 0;
+    }
+    L2CAP_TRACE_DEBUG("plcb active count %d", active_count);
+    return active_count;
+
 }
 
 /*******************************************************************************
@@ -1445,9 +1480,11 @@ void l2cu_change_pri_ccb (tL2C_CCB *p_ccb, tL2CAP_CHNL_PRIORITY priority)
 ** Returns          pointer to CCB, or NULL if none
 **
 *******************************************************************************/
+bool l2cu_find_ccb_in_list(void *p_ccb_node, void *p_local_cid);
 tL2C_CCB *l2cu_allocate_ccb (tL2C_LCB *p_lcb, UINT16 cid)
 {
     tL2C_CCB    *p_ccb = NULL;
+    uint16_t tmp_cid = L2CAP_BASE_APPL_CID;
     L2CAP_TRACE_DEBUG ("l2cu_allocate_ccb: cid 0x%04x", cid);
 
     p_ccb = l2cu_find_free_ccb ();
@@ -1470,7 +1507,13 @@ tL2C_CCB *l2cu_allocate_ccb (tL2C_LCB *p_lcb, UINT16 cid)
     p_ccb->in_use = TRUE;
 
     /* Get a CID for the connection */
-    p_ccb->local_cid = L2CAP_BASE_APPL_CID + (list_length(l2cb.p_ccb_pool) - 1);
+    for (tmp_cid = L2CAP_BASE_APPL_CID; tmp_cid < MAX_L2CAP_CHANNELS + L2CAP_BASE_APPL_CID; tmp_cid++) {
+        if (list_foreach(l2cb.p_ccb_pool, l2cu_find_ccb_in_list, &tmp_cid) == NULL) {
+            break;
+        }
+    }
+    assert(tmp_cid != MAX_L2CAP_CHANNELS + L2CAP_BASE_APPL_CID);
+    p_ccb->local_cid = tmp_cid;
     p_ccb->p_lcb = p_lcb;
     p_ccb->p_rcb = NULL;
     p_ccb->should_free_rcb = false;

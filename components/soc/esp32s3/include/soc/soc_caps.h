@@ -15,6 +15,9 @@
 #define SOC_ULP_SUPPORTED               1
 #define SOC_RTC_SLOW_MEM_SUPPORTED      1
 #define SOC_CCOMP_TIMER_SUPPORTED       1
+#define SOC_DIG_SIGN_SUPPORTED          1
+#define SOC_HMAC_SUPPORTED              1
+#define SOC_ASYNC_MEMCPY_SUPPORTED      1
 #define SOC_EFUSE_SECURE_BOOT_KEY_DIGESTS 3
 
 
@@ -159,14 +162,18 @@
 
 // Attention: These fixed DMA channels are temporarily workaround before we have a centralized DMA controller API to help alloc the channel dynamically
 // Remove them when GDMA driver API is ready
-#define SOC_GDMA_SPI2_DMA_CHANNEL (1)
-#define SOC_GDMA_SPI3_DMA_CHANNEL (2)
 #define SOC_GDMA_SHA_DMA_CHANNEL  (3)
 #define SOC_GDMA_AES_DMA_CHANNEL  (4)
 
 /*-------------------------- WI-FI HARDWARE TSF CAPS -------------------------------*/
 #define SOC_WIFI_HW_TSF                 (1)
 
+/*--------------- PHY REGISTER AND MEMORY SIZE CAPS --------------------------*/
+#define SOC_PHY_DIG_REGS_MEM_SIZE       (21*4)
+#define SOC_MAC_BB_PD_MEM_SIZE          (192*4)
+
+/*--------------- WIFI LIGHT SLEEP CLOCK WIDTH CAPS --------------------------*/
+#define SOC_WIFI_LIGHT_SLEEP_CLK_WIDTH  (12)
 
 /*-------------------------- SPI MEM CAPS ---------------------------------------*/
 #define SOC_SPI_MEM_SUPPORT_AUTO_WAIT_IDLE                (1)

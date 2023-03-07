@@ -264,24 +264,33 @@ static void bootloader_super_wdt_auto_feed(void)
 
 static inline void bootloader_hardware_init(void)
 {
-    // TODO ESP32-C3 IDF-2452
-    REGI2C_WRITE_MASK(I2C_ULP, I2C_ULP_IR_FORCE_XPD_IPH, 1);
-    REGI2C_WRITE_MASK(I2C_BIAS, I2C_BIAS_DREG_1P1_PVT, 12);
+    // This check is always included in the bootloader so it can
+    // print the minimum revision error message later in the boot
+    if (bootloader_common_get_chip_revision() < 3) {
+        REGI2C_WRITE_MASK(I2C_ULP, I2C_ULP_IR_FORCE_XPD_IPH, 1);
+        REGI2C_WRITE_MASK(I2C_BIAS, I2C_BIAS_DREG_1P1_PVT, 12);
+    }
 }
 
-/* There happend clock glitch reset for some chip when testing wifi[BIT0] and brownout reset when chip startup[BIT1].
- * But super_watch_dog_reset function is ok, so open it[BIT2].
- * Whether this api will deleted or not depends on analog design & test result when ECO chip come back.
- */
 static inline void bootloader_glitch_reset_disable(void)
 {
-    // TODO ESP32-C3 IDF-2453
-    REG_SET_FIELD(RTC_CNTL_FIB_SEL_REG, RTC_CNTL_FIB_SEL, BIT2);
+    /*
+      For origin chip & ECO1: only support swt reset;
+      For ECO2: fix brownout reset bug, support swt & brownout reset;
+      For ECO3: fix clock glitch reset bug, support all reset, include: swt & brownout & clock glitch reset.
+    */
+    uint8_t chip_version = bootloader_common_get_chip_revision();
+    if (chip_version < 2) {
+        REG_SET_FIELD(RTC_CNTL_FIB_SEL_REG, RTC_CNTL_FIB_SEL, RTC_CNTL_FIB_SUPER_WDT_RST);
+    } else if (chip_version == 2) {
+        REG_SET_FIELD(RTC_CNTL_FIB_SEL_REG, RTC_CNTL_FIB_SEL, RTC_CNTL_FIB_SUPER_WDT_RST | RTC_CNTL_FIB_BOR_RST);
+    }
 }
 
 esp_err_t bootloader_init(void)
 {
     esp_err_t ret = ESP_OK;
+
     bootloader_hardware_init();
     bootloader_glitch_reset_disable();
     bootloader_super_wdt_auto_feed();

@@ -38,6 +38,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdio.h>
 #include <limits.h>
+#include "esp_timer.h"              /* required for FreeRTOS run time stats */
 
 #include "sdkconfig.h"
 #include "esp_attr.h"
@@ -270,7 +271,7 @@ static inline unsigned portENTER_CRITICAL_NESTED(void) {
 
 #ifdef CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER
 /* Coarse resolution time (us) */
-#define portALT_GET_RUN_TIME_COUNTER_VALUE(x)    do{(void)x; }while(0)
+#define portALT_GET_RUN_TIME_COUNTER_VALUE(x)    do {x = (uint32_t)esp_timer_get_time();} while(0)
 #endif
 
 extern void esp_vApplicationIdleHook( void );
@@ -292,6 +293,9 @@ void vApplicationSleep( TickType_t xExpectedIdleTime );
 
 #define portVALID_TCB_MEM(ptr) esp_ptr_byte_accessible(ptr)
 #define portVALID_STACK_MEM(ptr) esp_ptr_byte_accessible(ptr)
+
+/* Get tick rate per second */
+uint32_t xPortGetTickRateHz(void);
 
 // configASSERT_2 if requested
 #if configASSERT_2

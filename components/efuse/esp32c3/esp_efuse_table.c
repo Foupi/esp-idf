@@ -17,7 +17,7 @@
 #include <assert.h>
 #include "esp_efuse_table.h"
 
-// md5_digest_table 96cd6235ddc0947b4a296add3f942acb
+// md5_digest_table 61baa79d296df996c838bc2adc1837e5
 // This file was generated from the file esp_efuse_table.csv. DO NOT CHANGE THIS FILE MANUALLY.
 // If you want to change some fields, you need to change esp_efuse_table.csv file
 // then run `efuse_common_table` or `efuse_custom_table` command it will generate this file.
@@ -312,7 +312,7 @@ static const esp_efuse_desc_t ENABLE_SECURITY_DOWNLOAD[] = {
 };
 
 static const esp_efuse_desc_t UART_PRINT_CONTROL[] = {
-    {EFUSE_BLK0, 134, 2}, 	 // b00:force print. b01:control by GPIO46 - low level print. b10:control by GPIO46 - high level print. b11:force disable print.,
+    {EFUSE_BLK0, 134, 2}, 	 // b00:force print. b01:control by GPIO8 - low level print. b10:control by GPIO8 - high level print. b11:force disable print.,
 };
 
 static const esp_efuse_desc_t PIN_POWER_SELECTION[] = {
@@ -392,8 +392,24 @@ static const esp_efuse_desc_t SPI_PAD_CONFIG_D7[] = {
     {EFUSE_BLK1, 108, 6}, 	 // SPI_PAD_configure D7,
 };
 
+static const esp_efuse_desc_t WAFER_VERSION[] = {
+    {EFUSE_BLK1, 114, 3}, 	 // WAFER version,
+};
+
+static const esp_efuse_desc_t PKG_VERSION[] = {
+    {EFUSE_BLK1, 117, 3}, 	 // Package version 0:ESP32C3,
+};
+
+static const esp_efuse_desc_t BLOCK1_VERSION[] = {
+    {EFUSE_BLK1, 120, 3}, 	 // BLOCK1 efuse version,
+};
+
+static const esp_efuse_desc_t OPTIONAL_UNIQUE_ID[] = {
+    {EFUSE_BLK2, 0, 128}, 	 // Optional unique 128-bit ID,
+};
+
 static const esp_efuse_desc_t BLOCK2_VERSION[] = {
-    {EFUSE_BLK2, 128, 3}, 	 // Version of Block2,
+    {EFUSE_BLK2, 128, 3}, 	 // Version of BLOCK2,
 };
 
 static const esp_efuse_desc_t TEMP_CALIB[] = {
@@ -466,6 +482,30 @@ static const esp_efuse_desc_t KEY5[] = {
 
 static const esp_efuse_desc_t SYS_DATA_PART2[] = {
     {EFUSE_BLK10, 0, 256}, 	 // System configuration,
+};
+
+static const esp_efuse_desc_t K_RTC_LDO[] = {
+    {EFUSE_BLK1, 135, 7}, 	 // BLOCK1 K_RTC_LDO,
+};
+
+static const esp_efuse_desc_t K_DIG_LDO[] = {
+    {EFUSE_BLK1, 142, 7}, 	 // BLOCK1 K_DIG_LDO,
+};
+
+static const esp_efuse_desc_t V_RTC_DBIAS20[] = {
+    {EFUSE_BLK1, 149, 8}, 	 // BLOCK1 voltage of rtc dbias20,
+};
+
+static const esp_efuse_desc_t V_DIG_DBIAS20[] = {
+    {EFUSE_BLK1, 157, 8}, 	 // BLOCK1 voltage of digital dbias20,
+};
+
+static const esp_efuse_desc_t DIG_DBIAS_HVT[] = {
+    {EFUSE_BLK1, 165, 5}, 	 // BLOCK1 digital dbias when hvt,
+};
+
+static const esp_efuse_desc_t THRES_HVT[] = {
+    {EFUSE_BLK1, 170, 10}, 	 // BLOCK1 pvt threshold when hvt,
 };
 
 
@@ -833,7 +873,7 @@ const esp_efuse_desc_t* ESP_EFUSE_ENABLE_SECURITY_DOWNLOAD[] = {
 };
 
 const esp_efuse_desc_t* ESP_EFUSE_UART_PRINT_CONTROL[] = {
-    &UART_PRINT_CONTROL[0],    		// b00:force print. b01:control by GPIO46 - low level print. b10:control by GPIO46 - high level print. b11:force disable print.
+    &UART_PRINT_CONTROL[0],    		// b00:force print. b01:control by GPIO8 - low level print. b10:control by GPIO8 - high level print. b11:force disable print.
     NULL
 };
 
@@ -932,8 +972,28 @@ const esp_efuse_desc_t* ESP_EFUSE_SPI_PAD_CONFIG_D7[] = {
     NULL
 };
 
+const esp_efuse_desc_t* ESP_EFUSE_WAFER_VERSION[] = {
+    &WAFER_VERSION[0],    		// WAFER version
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_PKG_VERSION[] = {
+    &PKG_VERSION[0],    		// Package version 0:ESP32C3
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_BLOCK1_VERSION[] = {
+    &BLOCK1_VERSION[0],    		// BLOCK1 efuse version
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_OPTIONAL_UNIQUE_ID[] = {
+    &OPTIONAL_UNIQUE_ID[0],    		// Optional unique 128-bit ID
+    NULL
+};
+
 const esp_efuse_desc_t* ESP_EFUSE_BLOCK2_VERSION[] = {
-    &BLOCK2_VERSION[0],    		// Version of Block2
+    &BLOCK2_VERSION[0],    		// Version of BLOCK2
     NULL
 };
 
@@ -1024,5 +1084,35 @@ const esp_efuse_desc_t* ESP_EFUSE_KEY5[] = {
 
 const esp_efuse_desc_t* ESP_EFUSE_SYS_DATA_PART2[] = {
     &SYS_DATA_PART2[0],    		// System configuration
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_K_RTC_LDO[] = {
+    &K_RTC_LDO[0],    		// BLOCK1 K_RTC_LDO
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_K_DIG_LDO[] = {
+    &K_DIG_LDO[0],    		// BLOCK1 K_DIG_LDO
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_V_RTC_DBIAS20[] = {
+    &V_RTC_DBIAS20[0],    		// BLOCK1 voltage of rtc dbias20
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_V_DIG_DBIAS20[] = {
+    &V_DIG_DBIAS20[0],    		// BLOCK1 voltage of digital dbias20
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_DIG_DBIAS_HVT[] = {
+    &DIG_DBIAS_HVT[0],    		// BLOCK1 digital dbias when hvt
+    NULL
+};
+
+const esp_efuse_desc_t* ESP_EFUSE_THRES_HVT[] = {
+    &THRES_HVT[0],    		// BLOCK1 pvt threshold when hvt
     NULL
 };

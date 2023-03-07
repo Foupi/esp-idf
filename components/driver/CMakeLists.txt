@@ -66,6 +66,7 @@ endif()
 if(IDF_TARGET STREQUAL "esp32c3")
     list(APPEND srcs "gdma.c"
                      "spi_slave_hd.c"
+                     "adc_common.c"
                      "esp32c3/adc.c"
                      "esp32c3/adc2_init_cal.c"
                      "esp32c3/rtc_tempsensor.c")
@@ -75,7 +76,8 @@ idf_component_register(SRCS "${srcs}"
                     INCLUDE_DIRS ${includes}
                     PRIV_INCLUDE_DIRS "include/driver"
                     PRIV_REQUIRES efuse esp_pm esp_timer esp_ipc
-                    REQUIRES esp_ringbuf freertos soc hal esp_hw_support)
+                    REQUIRES esp_ringbuf freertos soc hal esp_hw_support
+                    LDFRAGMENTS linker.lf)
 # (REQUIRES cannot hide soc headers, since many arguments in the driver headers are chip-dependent)
 
 # uses C11 atomic feature

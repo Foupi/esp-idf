@@ -263,6 +263,14 @@ SECTIONS
     *(.fini.literal)
     *(.fini)
     *(.gnu.version)
+
+    /** CPU will try to prefetch up to 16 bytes of
+      * of instructions. This means that any configuration (e.g. MMU, PMS) must allow
+      * safe access to up to 16 bytes after the last real instruction, add
+      * dummy bytes to ensure this
+      */
+    . += 16;
+
     _text_end = ABSOLUTE(.);
     _instruction_reserved_end = ABSOLUTE(.);
     _etext = .;
@@ -361,6 +369,8 @@ SECTIONS
   {
     /* C3 memprot requires 512 B alignment for split lines */
     . = ALIGN (0x200);
+    /* iram_end_test section exists for use by memprot unit tests only */
+    *(.iram_end_test)
     _iram_text_end = ABSOLUTE(.);
   } > iram0_0_seg
 

@@ -233,6 +233,7 @@ typedef struct {
     uint8_t max_connection;     /**< Max number of stations allowed to connect in, default 4, max 10 */
     uint16_t beacon_interval;   /**< Beacon interval which should be multiples of 100. Unit: TU(time unit, 1 TU = 1024 us). Range: 100 ~ 60000. Default value: 100 */
     wifi_cipher_type_t pairwise_cipher;   /**< pairwise cipher of SoftAP, group cipher will be derived using this. cipher values are valid starting from WIFI_CIPHER_TYPE_TKIP, enum values before that will be considered as invalid and default cipher suites(TKIP+CCMP) will be used. Valid cipher suites in softAP mode are WIFI_CIPHER_TYPE_TKIP, WIFI_CIPHER_TYPE_CCMP and WIFI_CIPHER_TYPE_TKIP_CCMP. */
+    bool ftm_responder;         /**< Enable FTM Responder mode */
 } wifi_ap_config_t;
 
 /** @brief STA configuration settings for the ESP32 */
@@ -598,6 +599,8 @@ typedef enum {
     WIFI_EVENT_STA_BSS_RSSI_LOW,         /**< AP's RSSI crossed configured threshold */
     WIFI_EVENT_ACTION_TX_STATUS,         /**< Status indication of Action Tx operation */
     WIFI_EVENT_ROC_DONE,                 /**< Remain-on-Channel operation complete */
+
+    WIFI_EVENT_STA_BEACON_TIMEOUT,       /**< ESP32 station beacon timeout */
 
     WIFI_EVENT_MAX,                      /**< Invalid WiFi event ID */
 } wifi_event_t;

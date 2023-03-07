@@ -53,7 +53,7 @@ uint64_t g_wifi_feature_caps =
 #if CONFIG_ESP32_WIFI_ENABLE_WPA3_SAE
     CONFIG_FEATURE_WPA3_SAE_BIT |
 #endif
-#if (CONFIG_ESP32_SPIRAM_SUPPORT | CONFIG_ESP32S2_SPIRAM_SUPPORT)
+#if (CONFIG_ESP32_SPIRAM_SUPPORT || CONFIG_ESP32S2_SPIRAM_SUPPORT || CONFIG_ESP32S3_SPIRAM_SUPPORT)
     CONFIG_FEATURE_CACHE_TX_BUF_BIT |
 #endif
 #if CONFIG_ESP_WIFI_FTM_INITIATOR_SUPPORT
@@ -133,7 +133,7 @@ esp_err_t esp_wifi_deinit(void)
 
     if (esp_wifi_get_user_init_flag_internal()) {
         ESP_LOGE(TAG, "Wi-Fi not stop");
-        return ESP_FAIL;
+        return ESP_ERR_WIFI_NOT_STOPPED;
     }
 
     esp_supplicant_deinit();
@@ -146,10 +146,14 @@ esp_err_t esp_wifi_deinit(void)
 #if CONFIG_ESP_NETIF_TCPIP_ADAPTER_COMPATIBLE_LAYER
     tcpip_adapter_clear_default_wifi_handlers();
 #endif
+#if CONFIG_ESP_WIFI_SLP_IRAM_OPT
+    esp_pm_unregister_light_sleep_default_params_config_callback();
+#endif
 #if CONFIG_FREERTOS_USE_TICKLESS_IDLE
 #if SOC_WIFI_HW_TSF
     esp_pm_unregister_skip_light_sleep_callback(esp_wifi_internal_is_tsf_active);
     esp_pm_unregister_inform_out_light_sleep_overhead_callback(esp_wifi_internal_update_light_sleep_wake_ahead_time);
+    esp_sleep_disable_wifi_wakeup();
 #endif
 #endif
 #if CONFIG_MAC_BB_PD
@@ -186,7 +190,6 @@ static void esp_wifi_config_info(void)
 #endif
 
 #ifdef CONFIG_ESP_WIFI_SLP_IRAM_OPT
-    esp_wifi_internal_optimize_wake_ahead_time();
     ESP_LOGI(TAG, "WiFi SLP IRAM OP enabled");
 #endif
 
@@ -209,6 +212,20 @@ esp_err_t esp_wifi_init(const wifi_init_config_t *config)
             return err;
         }
     }
+#endif
+
+#if CONFIG_ESP_WIFI_SLP_IRAM_OPT
+    esp_pm_register_light_sleep_default_params_config_callback(esp_wifi_internal_update_light_sleep_default_params);
+
+    int min_freq_mhz = esp_pm_impl_get_cpu_freq(PM_MODE_LIGHT_SLEEP);
+    int max_freq_mhz = esp_pm_impl_get_cpu_freq(PM_MODE_CPU_MAX);
+    esp_wifi_internal_update_light_sleep_default_params(min_freq_mhz, max_freq_mhz);
+
+    uint32_t sleep_delay_us = CONFIG_ESP_WIFI_SLP_DEFAULT_MIN_ACTIVE_TIME * 1000;
+    esp_wifi_set_sleep_delay_time(sleep_delay_us);
+
+    uint32_t keep_alive_time_us = CONFIG_ESP_WIFI_SLP_DEFAULT_MAX_ACTIVE_TIME * 1000 * 1000;
+    esp_wifi_set_keep_alive_time(keep_alive_time_us);
 #endif
 
 #if CONFIG_FREERTOS_USE_TICKLESS_IDLE
@@ -274,22 +291,6 @@ esp_err_t esp_wifi_init(const wifi_init_config_t *config)
     }
     adc2_cal_include(); //This enables the ADC2 calibration constructor at start up.
 
-#ifdef CONFIG_ESP_WIFI_FTM_REPORT_LOG_ENABLE
-    ftm_report_log_level_t log_lvl = {0};
-#ifdef CONFIG_ESP_WIFI_FTM_REPORT_SHOW_RTT
-    log_lvl.show_rtt = 1;
-#endif
-#ifdef CONFIG_ESP_WIFI_FTM_REPORT_SHOW_DIAG
-    log_lvl.show_diag = 1;
-#endif
-#ifdef CONFIG_ESP_WIFI_FTM_REPORT_SHOW_T1T2T3T4
-    log_lvl.show_t1t2t3t4 = 1;
-#endif
-#ifdef CONFIG_ESP_WIFI_FTM_REPORT_SHOW_RSSI
-    log_lvl.show_rxrssi = 1;
-#endif
-    esp_wifi_set_ftm_report_log_level(&log_lvl);
-#endif
     esp_wifi_config_info();
     return result;
 }
@@ -312,6 +313,8 @@ void wifi_apb80m_release(void)
 #endif //CONFIG_PM_ENABLE
 
 /* Coordinate ADC power with other modules. This overrides the function from PHY lib. */
+// It seems that it is only required on ESP32, but we still compile it for all chips, in case it is
+// called by PHY unexpectedly.
 void set_xpd_sar(bool en)
 {
     if (s_wifi_adc_xpd_flag == en) {
@@ -326,3 +329,10 @@ void set_xpd_sar(bool en)
         adc_power_release();
     }
 }
+
+#ifndef CONFIG_ESP_WIFI_FTM_ENABLE
+void ieee80211_ftm_attach(void)
+{
+    /* Do not remove, stub to overwrite weak link in Wi-Fi Lib */
+}
+#endif

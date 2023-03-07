@@ -73,17 +73,6 @@ typedef enum {
 } wifi_log_module_t;
 
 /**
-  * @brief FTM Report log levels configuration
-  *
-  */
-typedef struct {
-    uint8_t show_rtt:1;     /**< Display all valid Round-Trip-Time readings for FTM frames */
-    uint8_t show_diag:1;    /**< Display dialogue tokens for all FTM frames with valid readings */
-    uint8_t show_t1t2t3t4:1;/**< Display all valid T1, T2, T3, T4 readings considered while calculating RTT */
-    uint8_t show_rxrssi:1;  /**< Display RSSI for each FTM frame with valid readings */
-} ftm_report_log_level_t;
-
-/**
   * @brief WiFi log submodule definition
   *
   */
@@ -575,21 +564,28 @@ esp_err_t esp_wifi_set_tx_done_cb(wifi_tx_done_cb_t cb);
 esp_err_t esp_wifi_internal_set_spp_amsdu(wifi_interface_t ifidx, bool spp_cap, bool spp_req);
 
 /**
-  * @brief    Apply WiFi sleep optimization parameters
-  *
-  */
-void esp_wifi_internal_optimize_wake_ahead_time(void);
+ * @brief   Update WIFI light sleep default parameters
+ *
+ * @param   min_freq_mhz: minimum frequency of DFS
+ * @param   max_freq_mhz: maximum frequency of DFS
+ */
+void esp_wifi_internal_update_light_sleep_default_params(int min_freq_mhz, int max_freq_mhz);
 
 /**
- * @brief Set FTM Report log level
+ * @brief   Set the delay time for wifi to enter the sleep state when light sleep
  *
- * @param   log_lvl Log levels configuration
- *
- * @return
- *    - ESP_OK: succeed
- *    - ESP_ERR_NOT_SUPPORTED: No FTM support
+ * @param   return_to_sleep_delay: minimum timeout time  for waiting to receive
+ *                      data, when no data is received during the timeout period,
+ *                      the wifi enters the sleep process.
  */
-esp_err_t esp_wifi_set_ftm_report_log_level(ftm_report_log_level_t *log_lvl);
+void esp_wifi_set_sleep_delay_time(uint32_t return_to_sleep_delay);
+
+/**
+ * @brief   Set wifi keep alive time
+ *
+ * @param   keep_alive_time: keep alive time
+ */
+void esp_wifi_set_keep_alive_time(uint32_t keep_alive_time);
 
 #ifdef __cplusplus
 }

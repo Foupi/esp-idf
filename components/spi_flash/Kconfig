@@ -66,6 +66,10 @@ menu "SPI Flash driver"
             If making this as "y" in your project, you will increase free IRAM.
             But you may miss out on some flash features and support for new flash chips.
 
+            Currently the ROM cannot support the following features:
+
+            - SPI_FLASH_AUTO_SUSPEND (C3, S3)
+
     choice SPI_FLASH_DANGEROUS_WRITE
         bool  "Writing to dangerous flash regions"
         default SPI_FLASH_DANGEROUS_WRITE_ABORTS
@@ -144,15 +148,18 @@ menu "SPI Flash driver"
             Defines how many ticks will be before returning to continue a erasing.
 
     config SPI_FLASH_AUTO_SUSPEND
-        bool "Auto suspend long erase/write operations"
+        bool "Auto suspend long erase/write operations (READ DOCS FIRST)"
         default n
         depends on IDF_TARGET_ESP32C3 && !SPI_FLASH_USE_LEGACY_IMPL && !SPI_FLASH_ROM_IMPL
         help
-            This is made default n, because this needs bootloader support.
-            This feature needs special bootloader support.
-            If you want to OTA to a image with this feature
-            (e.g. turn on this config option for OTA image), please make
-            sure the bootloader has the support for it. (above IDF v4.3)
+            This option is default n before ESP32-C3, because it needs bootloader support.
+
+            CAUTION: If you want to OTA to an app with this feature turned on, please make
+            sure the bootloader has the support for it. (later than IDF v4.3)
+
+            Auto-suspend feature is only supported by XMC chip.
+            If you are using an official module, please contact Espressif Business support.
+            Also reading auto suspend part in `SPI Flash API` document before you enable this function.
 
     config SPI_FLASH_WRITE_CHUNK_SIZE
         int "Flash write chunk size"

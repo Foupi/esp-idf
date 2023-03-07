@@ -28,10 +28,11 @@ set(COMPONENTS
     micro-ecc
     main
     efuse
-    esp_system)
+    esp_system
+    newlib)
 set(BOOTLOADER_BUILD 1)
 include("${IDF_PATH}/tools/cmake/project.cmake")
-set(common_req log esp_rom esp_common esp_hw_support hal)
+set(common_req log esp_rom esp_common esp_hw_support hal newlib)
 if(LEGACY_INCLUDE_COMMON_HEADERS)
     list(APPEND common_req soc hal)
 endif()
@@ -52,6 +53,9 @@ string(REPLACE ";" " " esptoolpy_write_flash
 
 string(REPLACE ";" " " espsecurepy "${ESPSECUREPY}")
 string(REPLACE ";" " " espefusepy "${ESPEFUSEPY}")
+
+# Suppress warning: "Manually-specified variables were not used by the project: SECURE_BOOT_SIGNING_KEY"
+set(ignore_signing_key "${SECURE_BOOT_SIGNING_KEY}")
 
 if(CONFIG_SECURE_BOOTLOADER_REFLASHABLE)
     if(CONFIG_SECURE_BOOTLOADER_KEY_ENCODING_192BIT)

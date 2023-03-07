@@ -58,7 +58,9 @@ typedef enum {
 typedef struct {
     slave_cb_t cb_buffer_tx;                    ///< Callback when master reads from shared buffer
     slave_cb_t cb_buffer_rx;                    ///< Callback when master writes to shared buffer
+    slave_cb_t cb_send_dma_ready;               ///< Callback when TX data buffer is loaded to the hardware (DMA)
     slave_cb_t cb_sent;                         ///< Callback when data are sent
+    slave_cb_t cb_recv_dma_ready;               ///< Callback when RX data buffer is loaded to the hardware (DMA)
     slave_cb_t cb_recv;                         ///< Callback when data are received
     slave_cb_t cb_cmd9;                         ///< Callback when CMD9 received
     slave_cb_t cb_cmdA;                         ///< Callback when CMDA received
@@ -74,14 +76,19 @@ typedef struct {
 
 /// Configuration structure for the SPI Slave HD driver
 typedef struct {
-    uint8_t  mode;                              ///< SPI mode (0-3)
+    uint8_t mode;                               /**< SPI mode, representing a pair of (CPOL, CPHA) configuration:
+                                                     - 0: (0, 0)
+                                                     - 1: (0, 1)
+                                                     - 2: (1, 0)
+                                                     - 3: (1, 1)
+                                                 */
     uint32_t spics_io_num;                      ///< CS GPIO pin for this device
     uint32_t flags;                             ///< Bitwise OR of SPI_SLAVE_HD_* flags
     uint32_t command_bits;                      ///< command field bits, multiples of 8 and at least 8.
     uint32_t address_bits;                      ///< address field bits, multiples of 8 and at least 8.
     uint32_t dummy_bits;                        ///< dummy field bits, multiples of 8 and at least 8.
     uint32_t queue_size;                        ///< Transaction queue size. This sets how many transactions can be 'in the air' (queued using spi_slave_hd_queue_trans but not yet finished using spi_slave_hd_get_trans_result) at the same time
-    uint32_t dma_chan;                          ///< DMA channel used
+    spi_dma_chan_t dma_chan;                    ///< DMA channel to used.
     spi_slave_hd_callback_config_t cb_config;   ///< Callback configuration
 } spi_slave_hd_slot_config_t;
 
@@ -92,10 +99,11 @@ typedef struct {
  * @param bus_config    Bus configuration for the bus used
  * @param config        Configuration for the SPI Slave HD driver
  * @return
- *  - ESP_OK: on success
- *  - ESP_ERR_INVALID_ARG: invalid argument given
+ *  - ESP_OK:                on success
+ *  - ESP_ERR_INVALID_ARG:   invalid argument given
  *  - ESP_ERR_INVALID_STATE: function called in invalid state, may be some resources are already in use
- *  - ESP_ERR_NO_MEM: memory allocation failed
+ *  - ESP_ERR_NOT_FOUND      if there is no available DMA channel
+ *  - ESP_ERR_NO_MEM:        memory allocation failed
  *  - or other return value from `esp_intr_alloc`
  */
 esp_err_t spi_slave_hd_init(spi_host_device_t host_id, const spi_bus_config_t *bus_config,

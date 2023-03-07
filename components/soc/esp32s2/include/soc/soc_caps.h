@@ -48,6 +48,9 @@
 #define SOC_ULP_SUPPORTED               1
 #define SOC_RTC_SLOW_MEM_SUPPORTED      1
 #define SOC_CCOMP_TIMER_SUPPORTED       1
+#define SOC_DIG_SIGN_SUPPORTED          1
+#define SOC_HMAC_SUPPORTED              1
+#define SOC_ASYNC_MEMCPY_SUPPORTED      1
 #define SOC_EFUSE_SECURE_BOOT_KEY_DIGESTS 3
 
 #define SOC_CACHE_SUPPORT_WRAP          1
@@ -234,6 +237,7 @@
 /*-------------------------- TWAI CAPS ---------------------------------------*/
 #define SOC_TWAI_BRP_MIN                2
 #define SOC_TWAI_BRP_MAX                32768
+#define SOC_TWAI_SUPPORTS_RX_STATUS     1
 
 /*-------------------------- UART CAPS ---------------------------------------*/
 // ESP32-S2 have 2 UART.
@@ -299,6 +303,12 @@
 /*-------------------------- WI-FI HARDWARE TSF CAPS -------------------------------*/
 #define SOC_WIFI_HW_TSF                 (1)
 
+/*--------------- PHY REGISTER AND MEMORY SIZE CAPS --------------------------*/
+#define SOC_PHY_DIG_REGS_MEM_SIZE       (21*4)
+
+/*--------------- WIFI LIGHT SLEEP CLOCK WIDTH CAPS --------------------------*/
+#define SOC_WIFI_LIGHT_SLEEP_CLK_WIDTH  (12)
+
 /*-------------------------- SPI MEM CAPS ---------------------------------------*/
 #define SOC_SPI_MEM_SUPPORT_AUTO_WAIT_IDLE                (1)
 #define SOC_SPI_MEM_SUPPORT_AUTO_SUSPEND                  (1)
@@ -307,6 +317,8 @@
 #define SOC_PM_SUPPORT_EXT_WAKEUP       (1)
 
 #define SOC_PM_SUPPORT_WIFI_WAKEUP      (1)
+
+#define SOC_PM_SUPPORT_WIFI_PD          (1)
 
 /* ---------------------------- Compatibility ------------------------------- */
 // No contents

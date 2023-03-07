@@ -28,6 +28,7 @@
 #include "freertos/semphr.h"
 #include "hal/cpu_hal.h"
 #include "hal/emac.h"
+#include "hal/gpio_hal.h"
 #include "soc/soc.h"
 #include "sdkconfig.h"
 #include "esp_rom_gpio.h"
@@ -299,12 +300,14 @@ static void emac_esp32_rx_task(void *arg)
             } else {
                 free(buffer);
             }
+#if CONFIG_ETH_SOFT_FLOW_CONTROL
             // we need to do extra checking of remained frames in case there are no unhandled frames left, but pause frame is still undergoing
             if ((emac->free_rx_descriptor < emac->flow_control_low_water_mark) && emac->do_flow_ctrl && emac->frames_remain) {
                 emac_hal_send_pause_frame(&emac->hal, true);
             } else if ((emac->free_rx_descriptor > emac->flow_control_high_water_mark) || !emac->frames_remain) {
                 emac_hal_send_pause_frame(&emac->hal, false);
             }
+#endif
         } while (emac->frames_remain);
     }
     vTaskDelete(NULL);
@@ -316,14 +319,14 @@ static void emac_esp32_init_smi_gpio(emac_esp32_t *emac)
         /* Setup SMI MDC GPIO */
         gpio_set_direction(emac->smi_mdc_gpio_num, GPIO_MODE_OUTPUT);
         esp_rom_gpio_connect_out_signal(emac->smi_mdc_gpio_num, EMAC_MDC_O_IDX, false, false);
-        PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[emac->smi_mdc_gpio_num], PIN_FUNC_GPIO);
+        gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[emac->smi_mdc_gpio_num], PIN_FUNC_GPIO);
     }
     if (emac->smi_mdio_gpio_num >= 0) {
         /* Setup SMI MDIO GPIO */
         gpio_set_direction(emac->smi_mdio_gpio_num, GPIO_MODE_INPUT_OUTPUT);
         esp_rom_gpio_connect_out_signal(emac->smi_mdio_gpio_num, EMAC_MDO_O_IDX, false, false);
         esp_rom_gpio_connect_in_signal(emac->smi_mdio_gpio_num, EMAC_MDI_I_IDX, false);
-        PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[emac->smi_mdio_gpio_num], PIN_FUNC_GPIO);
+        gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[emac->smi_mdio_gpio_num], PIN_FUNC_GPIO);
     }
 }
 

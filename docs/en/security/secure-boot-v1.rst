@@ -21,7 +21,7 @@ Background
 
 - Efuses are used to store the secure bootloader key (in efuse BLOCK2), and also a single Efuse bit (ABS_DONE_0) is burned (written to 1) to permanently enable secure boot on the chip.  For more details on eFuses, see *{IDF_TARGET_NAME} Technical Reference Manual* > *eFuse Controller (eFuse)* [`PDF <{IDF_TARGET_TRM_EN_URL}#efuse>`__].
 
-- To understand the secure boot process, first familiarise yourself with the standard :doc:`ESP-IDF boot process <../api-guides/general-notes>`.
+- To understand the secure boot process, first familiarise yourself with the standard :doc:`ESP-IDF boot process <../api-guides/startup>`.
 
 - Both stages of the boot process (initial software bootloader load, and subsequent partition & app loading) are verified by the secure boot process, in a "chain of trust" relationship.
 
@@ -68,19 +68,10 @@ The following keys are used by the secure boot process:
 
   - The private key from this key pair *must be securely kept private*, as anyone who has this key can authenticate to any bootloader that is configured with secure boot and the matching public key.
 
-.. _secure-boot-bootloader-size:
-
 Bootloader Size
 ---------------
 
-When secure boot is enabled the bootloader app binary ``bootloader.bin`` may exceed the default bootloader size limit. This is especially likely if flash encryption is enabled as well. The default size limit is 0x7000 (28672) bytes (partition table offset 0x8000 - bootloader offset 0x1000).
-
-If the bootloader becomes too large, the {IDF_TARGET_NAME} will fail to boot - errors will be logged about either invalid partition table or invalid bootloader checksum.
-
-Options to work around this are:
-
-- Reduce :ref:`bootloader log level <CONFIG_BOOTLOADER_LOG_LEVEL>`. Setting log level to Warning, Error or None all significantly reduce the final binary size (but may make it harder to debug).
-- Set :ref:`partition table offset <CONFIG_PARTITION_TABLE_OFFSET>` to a higher value than 0x8000, to place the partition table later in the flash. This increases the space available for the bootloader. If the :doc:`partition table </api-guides/partition-tables>` CSV file contains explicit partition offsets, they will need changing so no partition has an offset lower than ``CONFIG_PARTITION_TABLE_OFFSET + 0x1000``. (This includes the default partition CSV files supplied with ESP-IDF.)
+Enabling Secure boot and/or flash encryption will increase the size of bootloader, which might require updating partition table offset. See :ref:`secure-boot-bootloader-size`.
 
 .. _secure-boot-howto:
 

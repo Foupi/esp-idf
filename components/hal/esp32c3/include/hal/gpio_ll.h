@@ -26,10 +26,22 @@
 #include "soc/gpio_periph.h"
 #include "soc/rtc_cntl_reg.h"
 #include "hal/gpio_types.h"
+#include "stdlib.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*
+ * The following defines are used to disable USB JTAG when pins 18 and pins 19
+ * are set to be used as GPIO.
+ * See gpio_pad_select_gpio() below.
+ *
+ * TODO: Delete these definitions once the USB device registers definition is
+ * merged.
+ */
+#define USB_DEVICE_CONF0_REG        (0x60043018)
+#define USB_DEVICE_USB_PAD_ENABLE   (BIT(14))
 
 // Get GPIO hardware instance with giving gpio num
 #define GPIO_LL_GET_HW(num) (((num) == 0) ? (&GPIO) : NULL)
@@ -343,7 +355,11 @@ static inline void gpio_ll_deep_sleep_hold_dis(gpio_dev_t *hw)
   */
 static inline void gpio_ll_hold_en(gpio_dev_t *hw, gpio_num_t gpio_num)
 {
-    SET_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, GPIO_HOLD_MASK[gpio_num]);
+    if (gpio_num <= GPIO_NUM_5) {
+        REG_SET_BIT(RTC_CNTL_PAD_HOLD_REG, BIT(gpio_num));
+    } else {
+        SET_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, GPIO_HOLD_MASK[gpio_num]);
+    }
 }
 
 /**
@@ -354,7 +370,11 @@ static inline void gpio_ll_hold_en(gpio_dev_t *hw, gpio_num_t gpio_num)
   */
 static inline void gpio_ll_hold_dis(gpio_dev_t *hw, gpio_num_t gpio_num)
 {
-    CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, GPIO_HOLD_MASK[gpio_num]);
+    if (gpio_num <= GPIO_NUM_5) {
+        REG_CLR_BIT(RTC_CNTL_PAD_HOLD_REG, BIT(gpio_num));
+    } else {
+        CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_PAD_HOLD_REG, GPIO_HOLD_MASK[gpio_num]);
+    }
 }
 
 /**
@@ -371,6 +391,20 @@ static inline void gpio_ll_iomux_in(gpio_dev_t *hw, uint32_t gpio, uint32_t sign
 }
 
 /**
+ * @brief  Select a function for the pin in the IOMUX
+ *
+ * @param  pin_name Pin name to configure
+ * @param  func Function to assign to the pin
+ */
+static inline void gpio_ll_iomux_func_sel(uint32_t pin_name, uint32_t func)
+{
+    if (pin_name == IO_MUX_GPIO18_REG || pin_name == IO_MUX_GPIO19_REG) {
+        CLEAR_PERI_REG_MASK(USB_DEVICE_CONF0_REG, USB_DEVICE_USB_PAD_ENABLE);
+    }
+    PIN_FUNC_SELECT(pin_name, func);
+}
+
+/**
   * @brief Set peripheral output to an GPIO pad through the IOMUX.
   *
   * @param hw Peripheral GPIO hardware instance address.
@@ -383,18 +417,20 @@ static inline void gpio_ll_iomux_out(gpio_dev_t *hw, uint8_t gpio_num, int func,
 {
     hw->func_out_sel_cfg[gpio_num].oen_sel = 0;
     hw->func_out_sel_cfg[gpio_num].oen_inv_sel = oen_inv;
-    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio_num], func);
+    gpio_ll_iomux_func_sel(GPIO_PIN_MUX_REG[gpio_num], func);
 }
 
 static inline void gpio_ll_force_hold_all(gpio_dev_t *hw)
 {
     CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_UNHOLD);
     SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_HOLD);
+    SET_PERI_REG_MASK(RTC_CNTL_PWC_REG, RTC_CNTL_PAD_FORCE_HOLD_M);
 }
 
-static inline void gpio_ll_force_unhold_all(gpio_dev_t *hw)
+static inline void gpio_ll_force_unhold_all(void)
 {
     CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_HOLD);
+    CLEAR_PERI_REG_MASK(RTC_CNTL_PWC_REG, RTC_CNTL_PAD_FORCE_HOLD_M);
     SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_UNHOLD);
     SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_CLR_DG_PAD_AUTOHOLD);
 }
@@ -509,6 +545,41 @@ static inline void gpio_ll_sleep_output_enable(gpio_dev_t *hw, gpio_num_t gpio_n
     PIN_SLP_OUTPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
 }
 
+/**
+ * @brief Enable GPIO deep-sleep wake-up function.
+ *
+ * @param hw Peripheral GPIO hardware instance address.
+ * @param gpio_num GPIO number.
+ * @param intr_type GPIO wake-up type. Only GPIO_INTR_LOW_LEVEL or GPIO_INTR_HIGH_LEVEL can be used.
+ */
+static inline void gpio_ll_deepsleep_wakeup_enable(gpio_dev_t *hw, gpio_num_t gpio_num, gpio_int_type_t intr_type)
+{
+    if (gpio_num > GPIO_NUM_5) {
+        abort(); // gpio lager than 5 doesn't support.
+    }
+    REG_SET_BIT(RTC_CNTL_GPIO_WAKEUP_REG, RTC_CNTL_GPIO_PIN_CLK_GATE);
+    REG_SET_BIT(RTC_CNTL_EXT_WAKEUP_CONF_REG, RTC_CNTL_GPIO_WAKEUP_FILTER);
+    SET_PERI_REG_MASK(RTC_CNTL_GPIO_WAKEUP_REG, 1 << (RTC_CNTL_GPIO_PIN0_WAKEUP_ENABLE_S - gpio_num));
+    uint32_t reg = REG_READ(RTC_CNTL_GPIO_WAKEUP_REG);
+    reg &= (~(RTC_CNTL_GPIO_PIN0_INT_TYPE_V << (RTC_CNTL_GPIO_PIN0_INT_TYPE_S - gpio_num * 3)));
+    reg |= (intr_type << (RTC_CNTL_GPIO_PIN0_INT_TYPE_S - gpio_num * 3));
+    REG_WRITE(RTC_CNTL_GPIO_WAKEUP_REG, reg);
+}
+
+/**
+ * @brief Disable GPIO deep-sleep wake-up function.
+ *
+ * @param hw Peripheral GPIO hardware instance address.
+ * @param gpio_num GPIO number
+ */
+static inline void gpio_ll_deepsleep_wakeup_disable(gpio_dev_t *hw, gpio_num_t gpio_num)
+{
+    if (gpio_num > GPIO_NUM_5) {
+        abort(); // gpio lager than 5 doesn't support.
+    }
+    CLEAR_PERI_REG_MASK(RTC_CNTL_GPIO_WAKEUP_REG, 1 << (RTC_CNTL_GPIO_PIN0_WAKEUP_ENABLE_S - gpio_num));
+    CLEAR_PERI_REG_MASK(RTC_CNTL_GPIO_WAKEUP_REG, RTC_CNTL_GPIO_PIN0_INT_TYPE_S - gpio_num * 3);
+}
 
 #ifdef __cplusplus
 }

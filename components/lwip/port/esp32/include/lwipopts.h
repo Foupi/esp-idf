@@ -749,7 +749,7 @@
 /**
  * LWIP_IPV6==1: Enable IPv6
  */
-#define LWIP_IPV6                       1
+#define LWIP_IPV6                       CONFIG_LWIP_IPV6
 
 /**
  * MEMP_NUM_ND6_QUEUE: Max number of IPv6 packets to queue during MAC resolution.
@@ -962,10 +962,11 @@
 #define ESP_AUTO_IP                     1
 #define ESP_PBUF                        1
 #define ESP_PPP                         1
-#define ESP_IPV6                        1
+#define ESP_IPV6                        LWIP_IPV6
 #define ESP_SOCKET                      1
 #define ESP_LWIP_SELECT                 1
 #define ESP_LWIP_LOCK                   1
+#define ESP_THREAD_PROTECTION           1
 
 #ifdef CONFIG_LWIP_IPV6_AUTOCONFIG
 #define ESP_IPV6_AUTOCONFIG             CONFIG_LWIP_IPV6_AUTOCONFIG
@@ -990,7 +991,11 @@
 /**
  * LWIP_DEBUG: Enable lwip debugging in other modules.
  */
-#define LWIP_DEBUG                      LWIP_DBG_OFF
+#ifdef CONFIG_LWIP_DEBUG
+#define LWIP_DEBUG                      LWIP_DBG_ON
+#else
+#undef LWIP_DEBUG
+#endif
 
 #define CHECKSUM_CHECK_UDP              CONFIG_LWIP_CHECKSUM_CHECK_UDP
 #define CHECKSUM_CHECK_IP               CONFIG_LWIP_CHECKSUM_CHECK_IP

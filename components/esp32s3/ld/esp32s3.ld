@@ -8,6 +8,14 @@
 
 #include "sdkconfig.h"
 
+#ifdef CONFIG_BOOTLOADER_CUSTOM_RESERVE_RTC
+#define ESP_BOOTLOADER_RESERVE_RTC (CONFIG_BOOTLOADER_RESERVE_RTC_SIZE + CONFIG_BOOTLOADER_CUSTOM_RESERVE_RTC_SIZE)
+#elif defined(CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP)
+#define ESP_BOOTLOADER_RESERVE_RTC (CONFIG_BOOTLOADER_RESERVE_RTC_SIZE)
+#else
+#define ESP_BOOTLOADER_RESERVE_RTC 0
+#endif
+
 #define SRAM_IRAM_START     0x40370000
 #define SRAM_DRAM_START     0x3FC80000
 #define I_D_SRAM_OFFSET     (SRAM_IRAM_START - SRAM_DRAM_START)
@@ -65,19 +73,19 @@ MEMORY
   /**
    * RTC fast memory (executable). Persists over deep sleep.
    */
-  rtc_iram_seg(RWX) :                org = 0x600fe000, len = 0x2000
+  rtc_iram_seg(RWX) :                org = 0x600fe000, len = 0x2000 - ESP_BOOTLOADER_RESERVE_RTC
 
   /**
    * RTC fast memory (same block as above), viewed from data bus
    */
-  rtc_data_seg(RW) :                 org = 0x3ff80000, len = 0x2000
+  rtc_data_seg(RW) :                 org = 0x600fe000, len = 0x2000
 
   /**
    * RTC slow memory (data accessible). Persists over deep sleep.
    * Start of RTC slow memory is reserved for ULP co-processor code + data, if enabled.
    */
   rtc_slow_seg(RW)  :                org = 0x50000000 + CONFIG_ESP32S3_ULP_COPROC_RESERVE_MEM,
-                                     len = 0x1000 - CONFIG_ESP32S3_ULP_COPROC_RESERVE_MEM
+                                     len = 0x2000 - CONFIG_ESP32S3_ULP_COPROC_RESERVE_MEM
 }
 
 #if CONFIG_ESP32S3_USE_FIXED_STATIC_RAM_SIZE

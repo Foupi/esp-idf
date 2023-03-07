@@ -7,7 +7,8 @@ config BT_CTRL_BLE_MAX_ACT
     default 10
     range 1 10
     help
-        BLE maximum instances of bluetooth controller.
+        BLE maximum activities of bluetooth controller，both of connections,
+        scan , sync and adv(periodic adv, multi-adv).
 
 config BT_CTRL_BLE_MAX_ACT_EFF
     int
@@ -73,13 +74,6 @@ config BT_CTRL_HW_CCA_EFF
         If other devices are sending packets in the air and the signal is strong,
         the packet hw to be sent this time is cancelled.
 
-config BT_CTRL_COEX_PARAMETERS_ENABLE
-    bool "Allow Bluetooth preemption in the use of RF to support coexistence with Wi-Fi"
-    default n
-    help
-        Use pre-determined parameter set to control the use of RF by Bluetooth,
-        so that Bluetooth can compete for RF with Wi-fi to support coexistence.
-
 choice BT_CTRL_CE_LENGTH_TYPE
     prompt "Connection event length determination method"
     help
@@ -133,10 +127,20 @@ config BT_CTRL_RX_ANTENNA_INDEX_EFF
 
 choice BT_CTRL_DFT_TX_POWER_LEVEL
     prompt "BLE default Tx power level"
-    default BT_CTRL_DFT_TX_POWER_LEVEL_P9
+    default BT_CTRL_DFT_TX_POWER_LEVEL_P3
     help
         Specify default Tx power level
 
+    config BT_CTRL_DFT_TX_POWER_LEVEL_N27
+        bool "-27dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_N24
+        bool "-24dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_N21
+        bool "-21dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_N18
+        bool "-18dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_N15
+        bool "-15dBm"
     config BT_CTRL_DFT_TX_POWER_LEVEL_N12
         bool "-12dBm"
     config BT_CTRL_DFT_TX_POWER_LEVEL_N9
@@ -153,25 +157,33 @@ choice BT_CTRL_DFT_TX_POWER_LEVEL
         bool "+6dBm"
     config BT_CTRL_DFT_TX_POWER_LEVEL_P9
         bool "+9dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_P12
+        bool "+12dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_P15
+        bool "+15dBm"
+    config BT_CTRL_DFT_TX_POWER_LEVEL_P18
+        bool "+18dBm"
 endchoice
 
 config BT_CTRL_DFT_TX_POWER_LEVEL_EFF
     int
-    default 0 if BT_CTRL_DFT_TX_POWER_LEVEL_N12
-    default 1 if BT_CTRL_DFT_TX_POWER_LEVEL_N9
-    default 2 if BT_CTRL_DFT_TX_POWER_LEVEL_N6
-    default 3 if BT_CTRL_DFT_TX_POWER_LEVEL_N3
-    default 4 if BT_CTRL_DFT_TX_POWER_LEVEL_N0
-    default 5 if BT_CTRL_DFT_TX_POWER_LEVEL_P3
-    default 6 if BT_CTRL_DFT_TX_POWER_LEVEL_P6
-    default 7 if BT_CTRL_DFT_TX_POWER_LEVEL_P9
+    default 0 if BT_CTRL_DFT_TX_POWER_LEVEL_N27
+    default 1 if BT_CTRL_DFT_TX_POWER_LEVEL_N24
+    default 2 if BT_CTRL_DFT_TX_POWER_LEVEL_N21
+    default 3 if BT_CTRL_DFT_TX_POWER_LEVEL_N18
+    default 4 if BT_CTRL_DFT_TX_POWER_LEVEL_N15
+    default 5 if BT_CTRL_DFT_TX_POWER_LEVEL_N12
+    default 6 if BT_CTRL_DFT_TX_POWER_LEVEL_N9
+    default 7 if BT_CTRL_DFT_TX_POWER_LEVEL_N6
+    default 8 if BT_CTRL_DFT_TX_POWER_LEVEL_N3
+    default 9 if BT_CTRL_DFT_TX_POWER_LEVEL_N0
+    default 10 if BT_CTRL_DFT_TX_POWER_LEVEL_P3
+    default 11 if BT_CTRL_DFT_TX_POWER_LEVEL_P6
+    default 12 if BT_CTRL_DFT_TX_POWER_LEVEL_P9
+    default 13 if BT_CTRL_DFT_TX_POWER_LEVEL_P12
+    default 14 if BT_CTRL_DFT_TX_POWER_LEVEL_P15
+    default 15 if BT_CTRL_DFT_TX_POWER_LEVEL_P18
     default 0
-
-config BT_CTRL_COEX_USE_HOOKS
-    bool "Communicate Bluetooth working status with Wi-Fi to support coexistence"
-    default n
-    help
-        Send notifications of Bluetooth working status to support coexistence with Wi-Fi.
 
 config BT_CTRL_BLE_ADV_REPORT_FLOW_CTRL_SUPP
     bool "BLE adv report flow control supported"
@@ -276,6 +288,31 @@ config BT_CTRL_MESH_DUPL_SCAN_CACHE_SIZE
     help
         Maximum number of adv packets which can be recorded in duplicate scan cache for BLE Mesh.
         When the maximum amount of device in the filter is reached, the cache will be refreshed.
+
+choice BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM
+    prompt "Coexistence: limit on MAX Tx/Rx time for coded-PHY connection"
+    default BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_DIS
+    depends on ESP32_WIFI_SW_COEXIST_ENABLE
+    help
+        When using PHY-Coded in BLE connection, limitation on max tx/rx time can be applied to
+        better avoid dramatic performance deterioration of Wi-Fi.
+
+    config BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EN
+        bool "Force Enable"
+        help
+            Always enable the limitation on max tx/rx time for Coded-PHY connection
+
+    config BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_DIS
+        bool "Force Disable"
+        help
+            Disable the limitation on max tx/rx time for Coded-PHY connection
+endchoice
+
+config BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF
+    int
+    default 0 if (!ESP32_WIFI_SW_COEXIST_ENABLE)
+    default 1 if BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EN
+    default 0 if BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_DIS
 
 menu "MODEM SLEEP Options"
     visible if BT_ENABLED

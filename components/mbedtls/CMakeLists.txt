@@ -96,7 +96,8 @@ if(SHA_PERIPHERAL_TYPE STREQUAL "dma")
     if(CONFIG_IDF_TARGET_ESP32S2)
         set(SHA_DMA_SRCS "${COMPONENT_DIR}/port/sha/dma/esp_sha_crypto_dma_impl.c")
     else()
-        set(SHA_DMA_SRCS "${COMPONENT_DIR}/port/sha/dma/esp_sha_gdma_impl.c")
+        set(SHA_DMA_SRCS "${COMPONENT_DIR}/port/sha/dma/esp_sha_gdma_impl.c"
+                         "${COMPONENT_DIR}/port/crypto_shared_gdma/esp_crypto_shared_gdma.c")
     endif()
 endif()
 
@@ -151,6 +152,10 @@ if(CONFIG_MBEDTLS_HARDWARE_GCM)
     target_sources(mbedcrypto PRIVATE  "${COMPONENT_DIR}/port/aes/esp_aes_gcm.c")
 endif()
 
+if(CONFIG_MBEDTLS_ROM_MD5)
+    target_sources(mbedcrypto PRIVATE  "${COMPONENT_DIR}/port/md/esp_md.c")
+endif()
+
 foreach(target ${mbedtls_targets})
     target_compile_definitions(${target} PUBLIC -DMBEDTLS_CONFIG_FILE="mbedtls/esp_config.h")
 endforeach()
@@ -182,8 +187,12 @@ set_property(TARGET mbedcrypto APPEND PROPERTY LINK_INTERFACE_LIBRARIES mbedtls)
 target_link_libraries(${COMPONENT_LIB} PUBLIC ${mbedtls_targets})
 
 if(CONFIG_ESP_TLS_USE_DS_PERIPHERAL)
-    # Link target (esp32s2) library to component library
-    target_link_libraries(${COMPONENT_LIB} PUBLIC ${target})
+    # Link target (e.g. esp32s2) library to component library
+    idf_component_get_property(target_lib ${target} COMPONENT_LIB)
+    set_property(TARGET mbedcrypto APPEND PROPERTY INTERFACE_LINK_LIBRARIES $<LINK_ONLY:${target_lib}>)
+    # The linker seems to be unable to resolve all the dependencies without increasing this
+    set_property(TARGET mbedcrypto APPEND PROPERTY LINK_INTERFACE_MULTIPLICITY 6)
+    target_link_libraries(${COMPONENT_LIB} PUBLIC ${target_lib})
 endif()
 
 # Link esp-cryptoauthlib to mbedtls

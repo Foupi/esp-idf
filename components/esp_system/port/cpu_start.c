@@ -60,7 +60,7 @@
 #elif CONFIG_IDF_TARGET_ESP32C3
 #include "esp32c3/rtc.h"
 #include "esp32c3/cache_err_int.h"
-#include "esp32s3/rom/cache.h"
+#include "esp32c3/rom/cache.h"
 #include "esp32c3/rom/rtc.h"
 #include "soc/cache_memory.h"
 #include "esp32c3/memprot.h"
@@ -71,6 +71,7 @@
 #include "esp_flash_encrypt.h"
 
 #include "hal/rtc_io_hal.h"
+#include "hal/gpio_hal.h"
 #include "hal/wdt_hal.h"
 #include "soc/rtc.h"
 #include "soc/efuse_reg.h"
@@ -88,16 +89,13 @@
 #if CONFIG_APP_BUILD_TYPE_ELF_RAM
 #if CONFIG_IDF_TARGET_ESP32
 #include "esp32/rom/spi_flash.h"
-#endif // CONFIG_IDF_TARGET_ESP32
-#if CONFIG_IDF_TARGET_ESP32S2
+#elif CONFIG_IDF_TARGET_ESP32S2
 #include "esp32s2/rom/spi_flash.h"
-#endif // CONFIG_IDF_TARGET_ESP32S2
-#if CONFIG_IDF_TARGET_ESP32S3
+#elif CONFIG_IDF_TARGET_ESP32S3
 #include "esp32s3/rom/spi_flash.h"
-#endif // CONFIG_IDF_TARGET_ESP32S3
-#if CONFIG_IDF_TARGET_ESP32C3
+#elif CONFIG_IDF_TARGET_ESP32C3
 #include "esp32c3/rom/spi_flash.h"
-#endif // CONFIG_IDF_TARGET_ESP32C3
+#endif
 #endif // CONFIG_APP_BUILD_TYPE_ELF_RAM
 
 #include "esp_private/startup_internal.h"
@@ -456,10 +454,15 @@ void IRAM_ATTR call_start_cpu0(void)
 #if CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C3
     clock_hz = UART_CLK_FREQ_ROM; // From esp32-s3 on, UART clock source is selected to XTAL in ROM
 #endif
+    esp_rom_uart_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
     esp_rom_uart_set_clock_baudrate(CONFIG_ESP_CONSOLE_UART_NUM, clock_hz, CONFIG_ESP_CONSOLE_UART_BAUDRATE);
 #endif
 
+#if SOC_RTCIO_HOLD_SUPPORTED
     rtcio_hal_unhold_all();
+#else
+    gpio_hal_force_unhold_all();
+#endif
 
     esp_cache_err_int_init();
 

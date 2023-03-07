@@ -121,7 +121,7 @@ set sleep_init default param
 #define RTC_CNTL_DBG_ATTEN_MONITOR_DEFAULT  0
 #define RTC_CNTL_BIASSLP_MONITOR_DEFAULT  0
 #define RTC_CNTL_BIASSLP_SLEEP_DEFAULT  1
-#define RTC_CNTL_PD_CUR_MONITOR_DEFAULT  0
+#define RTC_CNTL_PD_CUR_MONITOR_DEFAULT  1
 #define RTC_CNTL_PD_CUR_SLEEP_DEFAULT  1
 
 #define APLL_SDM_STOP_VAL_1         0x09
@@ -405,11 +405,6 @@ bool rtc_clk_8md256_enabled(void);
  * @param o_div  frequency divider, 0..31
  */
 void rtc_clk_apll_enable(bool enable, uint32_t sdm0, uint32_t sdm1, uint32_t sdm2, uint32_t o_div);
-
-/**
- * @brief Set XTAL wait cycles by RTC slow clock's period
- */
-void rtc_clk_set_xtal_wait(void);
 
 /**
  * @brief Select source for RTC_SLOW_CLK
